@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laboratorio 1 - Módulos en Python</title>
+
+  <!-- Pyodide ejecuta Python en el navegador -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
+  <!-- jsPDF permite generar PDF desde el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script>
+    window.addEventListener("error", function(event) {
+      const target = event.target || {};
+      if (target.tagName === "SCRIPT" && target.src && target.src.includes("jspdf")) {
+        const fallback = document.createElement("script");
+        fallback.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        document.head.appendChild(fallback);
+      }
+    }, true);
+  </script>
+
+  <style>
+    :root {
+      --bg-1: #06111f;
+      --bg-2: #101b35;
+      --bg-3: #172554;
+      --glass: rgba(255, 255, 255, 0.095);
+      --glass-strong: rgba(255, 255, 255, 0.135);
+      --border: rgba(255, 255, 255, 0.2);
+      --border-soft: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --muted-2: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #a78bfa;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --code-bg: rgba(2, 6, 23, 0.88);
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 8%, rgba(56, 189, 248, 0.34), transparent 28%),
+        radial-gradient(circle at 88% 12%, rgba(167, 139, 250, 0.34), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.14), transparent 28%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
+      background-attachment: fixed;
+      line-height: 1.55;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 80%);
+    }
+
+    .page {
+      width: min(1380px, 94vw);
+      margin: 0 auto;
+      padding: 28px 0 80px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 38px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      border-radius: 999px;
+      right: -90px;
+      top: -140px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.38), transparent 65%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.46);
+      color: #dbeafe;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1.02;
+      letter-spacing: -1.4px;
+      max-width: 930px;
+    }
+
+    .hero p {
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--text);
+      padding: 10px 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 999px;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    .glass {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.055));
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    section {
+      padding: 26px;
+      margin: 20px 0;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 26px;
+      letter-spacing: -0.4px;
+    }
+
+    h3 {
+      color: #e0f2fe;
+      margin-bottom: 8px;
+    }
+
+    p {
+      color: var(--muted);
+    }
+
+    code {
+      background: rgba(56, 189, 248, 0.14);
+      color: #e0f2fe;
+      padding: 2px 7px;
+      border-radius: 7px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+    }
+
+    ol, ul {
+      padding-left: 24px;
+      color: var(--muted);
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.26);
+      color: #e0f2fe;
+      font-size: 14px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 980px) {
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rubric table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      background: rgba(2, 6, 23, 0.34);
+    }
+
+    .rubric th,
+    .rubric td {
+      border: 1px solid var(--border-soft);
+      padding: 13px;
+      text-align: left;
+      vertical-align: top;
+      color: var(--muted);
+    }
+
+    .rubric th {
+      color: var(--text);
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .student-box {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-width: 720px;
+    }
+
+    label {
+      color: #e2e8f0;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px 15px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+      background: rgba(2, 6, 23, 0.68);
+      color: var(--text);
+      outline: none;
+      font-size: 16px;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(56, 189, 248, 0.72);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .editor-card {
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      background: rgba(2, 6, 23, 0.34);
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .editor-title {
+      font-weight: 800;
+      font-size: 18px;
+      color: #f8fafc;
+    }
+
+    .editor-subtitle {
+      color: var(--muted-2);
+      font-size: 14px;
+      margin-top: 3px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 560px;
+      resize: vertical;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 22px;
+      background: var(--code-bg);
+      color: #e5e7eb;
+      font-family: "Cascadia Code", Consolas, Monaco, "Courier New", monospace;
+      font-size: 16px;
+      line-height: 1.7;
+      tab-size: 4;
+      outline: none;
+      box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.28);
+    }
+
+    #mainCode {
+      min-height: 410px;
+    }
+
+    .actions {
+      position: sticky;
+      bottom: 14px;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 17px;
+      font-weight: 800;
+      font-size: 15px;
+      color: #07111f;
+      background: linear-gradient(135deg, var(--accent), #67e8f9);
+      transition: transform .18s ease, filter .18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    button.secondary {
+      color: #0f172a;
+      background: linear-gradient(135deg, #c4b5fd, #e9d5ff);
+    }
+
+    button.pdf-button {
+      color: #03111d;
+      background: linear-gradient(135deg, #fde68a, #fbbf24 48%, #fb7185);
+      border: 2px solid rgba(255, 255, 255, 0.58);
+      box-shadow:
+        0 0 0 4px rgba(251, 191, 36, 0.14),
+        0 14px 36px rgba(251, 191, 36, 0.24);
+      min-width: 230px;
+      position: relative;
+    }
+
+    button.pdf-button::before {
+      content: "📄";
+      margin-right: 8px;
+    }
+
+    button.pdf-button:hover {
+      box-shadow:
+        0 0 0 5px rgba(251, 191, 36, 0.2),
+        0 18px 44px rgba(251, 191, 36, 0.32);
+    }
+
+    button.neutral {
+      color: #0f172a;
+      background: linear-gradient(135deg, #cbd5e1, #f8fafc);
+    }
+
+    button.danger {
+      color: #450a0a;
+      background: linear-gradient(135deg, #fca5a5, #fecaca);
+    }
+
+    button.success {
+      color: #052e16;
+      background: linear-gradient(135deg, #86efac, #bbf7d0);
+    }
+
+    .output {
+      white-space: pre-wrap;
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 210px;
+      color: #e5e7eb;
+      overflow: auto;
+      font-family: "Cascadia Code", Consolas, Monaco, "Courier New", monospace;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .result {
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 10px;
+      background: rgba(2, 6, 23, 0.56);
+      border: 1px solid var(--border-soft);
+    }
+
+    .pass {
+      color: var(--success);
+      font-weight: 900;
+    }
+
+    .fail {
+      color: #f87171;
+      font-weight: 900;
+    }
+
+    .warn {
+      color: #fbbf24;
+      font-weight: 900;
+    }
+
+    .small {
+      color: var(--muted-2);
+      font-size: 14px;
+    }
+
+    .score-big {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      height: 72px;
+      padding: 0 20px;
+      border-radius: 20px;
+      background: rgba(56, 189, 248, 0.13);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      font-size: 32px;
+      font-weight: 900;
+      color: #e0f2fe;
+      margin: 6px 0 14px;
+    }
+
+    .lab-alert {
+      display: none;
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(251, 191, 36, 0.38);
+      background: rgba(251, 191, 36, 0.12);
+      color: #fef3c7;
+      font-weight: 700;
+    }
+
+    .lab-alert.error {
+      border-color: rgba(248, 113, 113, 0.46);
+      background: rgba(239, 68, 68, 0.13);
+      color: #fecaca;
+    }
+
+    .lab-alert.success {
+      border-color: rgba(34, 197, 94, 0.46);
+      background: rgba(34, 197, 94, 0.13);
+      color: #bbf7d0;
+    }
+
+    .footer-note {
+      color: var(--muted-2);
+      text-align: center;
+      margin-top: 32px;
+      font-size: 14px;
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+      .actions, .nav, .editor-card, #resultado-ejecucion {
+        display: none !important;
+      }
+      .glass, .hero {
+        box-shadow: none;
+        background: white;
+        color: black;
+        border: 1px solid #ddd;
+      }
+      p, li, td, th {
+        color: black;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">🐍 Fundamentos de Python 2 · Clase 2</div>
+      <h1>Laboratorio 1: Módulos en Python</h1>
+      <p>
+        Practique cómo crear código reutilizable, importar módulos estándar y usar un módulo propio
+        desde un archivo principal. Al finalizar, podrá generar una nota automática y descargarla en PDF.
+      </p>
+
+      <nav class="nav">
+        <a href="#objetivo">Objetivo</a>
+        <a href="#requerimientos">Requerimientos</a>
+        <a href="#editor">Editor</a>
+        <a href="#resultado-ejecucion">Resultado</a>
+        <a href="#nota">Nota</a>
+      </nav>
+    </header>
+
+    <section id="objetivo" class="glass">
+      <h2>Objetivo del laboratorio</h2>
+      <p>
+        Completar un pequeño programa organizado en dos archivos:
+        <code>mi_modulo.py</code> y <code>main.py</code>.
+        El propósito es practicar <strong>módulos estándar</strong>, <strong>imports</strong>,
+        <strong>alias</strong>, <strong>funciones reutilizables</strong> y separación del código por responsabilidad.
+      </p>
+
+      <div class="pills">
+        <span class="pill">import</span>
+        <span class="pill">from ... import</span>
+        <span class="pill">as alias</span>
+        <span class="pill">math</span>
+        <span class="pill">random</span>
+        <span class="pill">datetime</span>
+        <span class="pill">módulo propio</span>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section id="requerimientos" class="glass">
+        <h2>Requerimientos de práctica</h2>
+        <ol>
+          <li>En <code>mi_modulo.py</code>, importe <code>math</code>, <code>random</code> y <code>datetime</code>.</li>
+          <li>Cree <code>calcular_area_circulo(radio)</code> usando <code>math.pi</code>.</li>
+          <li>Cree <code>generar_codigo_estudiante(nombre)</code> usando iniciales y un número aleatorio.</li>
+          <li>Cree <code>obtener_fecha_actual()</code> usando <code>datetime</code>.</li>
+          <li>Cree <code>resumen_estudiante(nombre, radio)</code> reutilizando las funciones anteriores.</li>
+          <li>En <code>main.py</code>, importe el módulo propio como <code>mod</code>.</li>
+          <li>En <code>main.py</code>, llame a <code>mod.resumen_estudiante()</code> e imprima el resultado.</li>
+        </ol>
+        <p class="small">
+          Recomendación: complete primero <code>mi_modulo.py</code> y después pruebe el resultado desde <code>main.py</code>.
+        </p>
+      </section>
+
+      <section class="glass rubric">
+        <h2>Rúbrica automática</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Criterio</th>
+              <th>Puntos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Uso correcto de módulos estándar: <code>math</code>, <code>random</code>, <code>datetime</code></td>
+              <td>20</td>
+            </tr>
+            <tr>
+              <td>Creación correcta de funciones reutilizables en <code>mi_modulo.py</code></td>
+              <td>35</td>
+            </tr>
+            <tr>
+              <td>Importación del módulo propio en <code>main.py</code> usando alias</td>
+              <td>15</td>
+            </tr>
+            <tr>
+              <td>Ejecución correcta del programa y salida esperada</td>
+              <td>20</td>
+            </tr>
+            <tr>
+              <td>Orden, claridad y comentarios básicos</td>
+              <td>10</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <section class="glass">
+      <h2>Datos del estudiante</h2>
+      <div class="student-box">
+        <label>
+          Nombre completo
+          <input id="studentName" placeholder="Ejemplo: María Fernanda Muñoz Vargas" />
+        </label>
+        <label>
+          Usuario de GitHub
+        <input id="githubUser" placeholder="Ejemplo: JeanArias" />
+        </label>
+      </div>
+      <p class="small">El nombre se incluirá en el PDF de la nota del laboratorio.</p>
+    </section>
+
+    <section id="editor" class="glass">
+      <h2>Editor de código</h2>
+      <p>
+        Complete los espacios marcados. Puede ejecutar el programa, generar una nota automática
+        y descargar el resultado en PDF.
+      </p>
+
+      <div class="editor-grid">
+        <div class="editor-card">
+          <div class="editor-header">
+            <div>
+              <div class="editor-title">Archivo 1: mi_modulo.py</div>
+              <div class="editor-subtitle">Aquí se construyen las funciones reutilizables.</div>
+            </div>
+            <span class="pill">Módulo propio</span>
+          </div>
+
+          <textarea id="moduleCode" spellcheck="false"># mi_modulo.py
+# Laboratorio 1 - Módulos en Python
+
+# 1. Importe los módulos estándar necesarios:
+# - math
+# - random
+# - datetime desde datetime
+
+# Escriba sus imports aquí:
+
+
+def calcular_area_circulo(radio):
+    """
+    Retorna el área de un círculo.
+    Fórmula: pi * radio ** 2
+    """
+    # Reemplace la siguiente línea:
+    pass
+
+
+def generar_codigo_estudiante(nombre):
+    """
+    Retorna un código con las iniciales del estudiante y un número aleatorio.
+    Ejemplo: Ana Mora -> AM-4821
+    """
+    # Reemplace la siguiente línea:
+    pass
+
+
+def obtener_fecha_actual():
+    """
+    Retorna la fecha actual en formato YYYY-MM-DD.
+    """
+    # Reemplace la siguiente línea:
+    pass
+
+
+def resumen_estudiante(nombre, radio):
+    """
+    Retorna un diccionario con:
+    - nombre
+    - codigo
+    - fecha
+    - area
+    """
+    # Reemplace la siguiente línea:
+    pass
+</textarea>
+        </div>
+
+        <div class="editor-card">
+          <div class="editor-header">
+            <div>
+              <div class="editor-title">Archivo 2: main.py</div>
+              <div class="editor-subtitle">Aquí se importa y ejecuta el módulo creado.</div>
+            </div>
+            <span class="pill">Programa principal</span>
+          </div>
+
+          <textarea id="mainCode" spellcheck="false"># main.py
+# Importe el módulo propio usando alias.
+# Ejemplo esperado: import mi_modulo as mod
+
+# Escriba su import aquí:
+
+
+nombre = "Estudiante Python"
+radio = 5
+
+# Llame a la función resumen_estudiante desde el módulo importado.
+# Luego imprima el resultado.
+
+# Escriba su código aquí:
+</textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button onclick="runProgram()">Ejecutar programa</button>
+        <button class="success" onclick="gradeProgram()">Generar nota automática</button>
+        <button class="pdf-button" id="pdfButton" onclick="downloadGradePDF()">Descargar PDF de nota</button>
+        <button class="neutral" onclick="downloadSubmissionJSON()">Descargar JSON de entrega</button>
+        <button class="neutral" onclick="loadExample()">Cargar ejemplo resuelto</button>
+        <button class="danger" onclick="resetCode()">Reiniciar laboratorio</button>
+      </div>
+    </section>
+
+    <section id="resultado-ejecucion" class="glass">
+      <h2>Resultado de ejecución</h2>
+      <p id="status" class="small">Cargando Python en el navegador...</p>
+      <div id="output" class="output"></div>
+    </section>
+
+    <section id="nota" class="glass">
+      <h2>Nota generada</h2>
+      <div id="grade" class="result">
+        Presione <strong>Generar nota automática</strong> para evaluar el laboratorio.
+      </div>
+      <div id="labAlert" class="lab-alert"></div>
+      <p class="small">
+        Después de generar la nota, use el botón amarillo <strong>Descargar PDF de nota</strong>.
+      </p>
+    </section>
+
+    <p class="footer-note">
+      Laboratorio práctico · Módulo 1: Módulos en Python · Fundamentos de Python 2
+    </p>
+  </main>
+
+  <script>
+    let lastGradeReport = null;
+    let pyodideReadyPromise = loadPyodide();
+
+    async function getPyodide() {
+      const pyodide = await pyodideReadyPromise;
+      document.getElementById("status").textContent = "Python cargado correctamente. Ya puede ejecutar el laboratorio.";
+      return pyodide;
+    }
+
+    getPyodide();
+
+    function showLabAlert(message, type = "info") {
+      const alertBox = document.getElementById("labAlert");
+      if (!alertBox) return;
+      alertBox.textContent = message;
+      alertBox.className = "lab-alert";
+      if (type === "error") alertBox.classList.add("error");
+      if (type === "success") alertBox.classList.add("success");
+      alertBox.style.display = "block";
+    }
+
+    function hideLabAlert() {
+      const alertBox = document.getElementById("labAlert");
+      if (!alertBox) return;
+      alertBox.style.display = "none";
+      alertBox.textContent = "";
+    }
+
+    function isJsPDFReady() {
+      return Boolean(window.jspdf && window.jspdf.jsPDF);
+    }
+
+    function escapeForPython(text) {
+      return JSON.stringify(text);
+    }
+
+    async function prepareFiles(pyodide) {
+      const moduleCode = document.getElementById("moduleCode").value;
+      const mainCode = document.getElementById("mainCode").value;
+      pyodide.FS.writeFile("mi_modulo.py", moduleCode);
+      pyodide.FS.writeFile("main.py", mainCode);
+    }
+
+    async function runProgram() {
+      const output = document.getElementById("output");
+      output.textContent = "Ejecutando...";
+      try {
+        const pyodide = await getPyodide();
+        await prepareFiles(pyodide);
+
+        pyodide.runPython(`
+import sys, io
+sys.modules.pop("mi_modulo", None)
+stdout = io.StringIO()
+old_stdout = sys.stdout
+sys.stdout = stdout
+try:
+    exec(open("main.py", encoding="utf-8").read(), {})
+except Exception as e:
+    print(type(e).__name__ + ": " + str(e))
+finally:
+    sys.stdout = old_stdout
+result_output = stdout.getvalue()
+`);
+        output.textContent = pyodide.globals.get("result_output") || "(Sin salida impresa)";
+      } catch (err) {
+        output.textContent = "Error al ejecutar: " + err;
+      }
+    }
+
+    async function gradeProgram() {
+      const gradeDiv = document.getElementById("grade");
+      const output = document.getElementById("output");
+      gradeDiv.innerHTML = "Evaluando...";
+      try {
+        const pyodide = await getPyodide();
+        await prepareFiles(pyodide);
+
+        const moduleCode = document.getElementById("moduleCode").value;
+        const mainCode = document.getElementById("mainCode").value;
+
+        const testScript = `
+import sys, math, re, io
+score = 0
+details = []
+
+module_text = ${escapeForPython(moduleCode)}
+main_text = ${escapeForPython(mainCode)}
+
+def add(condition, points, message_ok, message_fail):
+    global score
+    if condition:
+        score += points
+        details.append(("OK", points, message_ok))
+    else:
+        details.append(("NO", 0, message_fail))
+
+# Criterio 1: imports estándar
+add("import math" in module_text or "from math import" in module_text, 7, "Usa el módulo math.", "No se detectó uso/importación de math.")
+add("import random" in module_text or "from random import" in module_text, 6, "Usa el módulo random.", "No se detectó uso/importación de random.")
+add("datetime" in module_text, 7, "Usa datetime.", "No se detectó uso de datetime.")
+
+# Intentar importar el módulo del estudiante
+try:
+    sys.modules.pop("mi_modulo", None)
+    import mi_modulo
+    imported = True
+except Exception as e:
+    imported = False
+    import_error = type(e).__name__ + ": " + str(e)
+
+add(imported, 10, "El archivo mi_modulo.py se importa sin errores.", "mi_modulo.py no se pudo importar.")
+
+if imported:
+    required_functions = [
+        "calcular_area_circulo",
+        "generar_codigo_estudiante",
+        "obtener_fecha_actual",
+        "resumen_estudiante",
+    ]
+
+    for fn in required_functions:
+        add(hasattr(mi_modulo, fn), 4, f"Existe la función {fn}.", f"Falta la función {fn}.")
+
+    try:
+        area = mi_modulo.calcular_area_circulo(5)
+        add(abs(area - (math.pi * 25)) < 0.01, 9, "calcular_area_circulo retorna el valor esperado.", "calcular_area_circulo no retorna el área esperada.")
+    except Exception as e:
+        add(False, 9, "calcular_area_circulo funciona.", "Error al probar calcular_area_circulo: " + str(e))
+
+    try:
+        code = mi_modulo.generar_codigo_estudiante("Ana Mora")
+        add(isinstance(code, str) and "A" in code.upper() and "M" in code.upper() and any(ch.isdigit() for ch in code), 7, "generar_codigo_estudiante retorna iniciales y números.", "generar_codigo_estudiante no parece generar iniciales con números.")
+    except Exception as e:
+        add(False, 7, "generar_codigo_estudiante funciona.", "Error al probar generar_codigo_estudiante: " + str(e))
+
+    try:
+        fecha = mi_modulo.obtener_fecha_actual()
+        add(isinstance(fecha, str) and re.match(r"^\\d{4}-\\d{2}-\\d{2}$", fecha), 7, "obtener_fecha_actual retorna formato YYYY-MM-DD.", "obtener_fecha_actual no retorna formato YYYY-MM-DD.")
+    except Exception as e:
+        add(False, 7, "obtener_fecha_actual funciona.", "Error al probar obtener_fecha_actual: " + str(e))
+
+    try:
+        resumen = mi_modulo.resumen_estudiante("Ana Mora", 3)
+        condition = isinstance(resumen, dict) and all(k in resumen for k in ["nombre", "codigo", "fecha", "area"])
+        add(condition, 8, "resumen_estudiante retorna un diccionario completo.", "resumen_estudiante debe retornar un diccionario con nombre, codigo, fecha y area.")
+    except Exception as e:
+        add(False, 8, "resumen_estudiante funciona.", "Error al probar resumen_estudiante: " + str(e))
+
+# Criterio main
+add("import mi_modulo as" in main_text, 15, "main.py importa mi_modulo usando alias.", "main.py debe importar mi_modulo usando alias. Ejemplo: import mi_modulo as mod")
+
+# Ejecución de main.py
+try:
+    sys.modules.pop("mi_modulo", None)
+    stdout = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = stdout
+    exec(open("main.py", encoding="utf-8").read(), {})
+    sys.stdout = old_stdout
+    main_output = stdout.getvalue()
+    add(len(main_output.strip()) > 0, 20, "main.py se ejecuta e imprime un resultado.", "main.py debe imprimir el resultado del taller.")
+except Exception as e:
+    try:
+        sys.stdout = old_stdout
+    except Exception:
+        pass
+    add(False, 20, "main.py se ejecuta.", "Error al ejecutar main.py: " + type(e).__name__ + ": " + str(e))
+    main_output = ""
+
+# Orden/comentarios básicos
+comment_lines = sum(1 for line in (module_text + "\\n" + main_text).splitlines() if line.strip().startswith("#"))
+has_pass = "pass" in module_text
+add(comment_lines >= 3 and not has_pass, 10, "El código mantiene comentarios básicos y no deja pass pendientes.", "Debe mantener comentarios básicos y reemplazar los pass pendientes.")
+
+score = min(score, 100)
+grade_text = "Aprobado" if score >= 70 else "En proceso de mejora"
+`;
+
+        pyodide.runPython(testScript);
+
+        const score = pyodide.globals.get("score");
+        const details = pyodide.globals.get("details").toJs();
+        const gradeText = pyodide.globals.get("grade_text");
+        const studentName = document.getElementById("studentName").value || "Estudiante sin nombre";
+        const githubUser = document.getElementById("githubUser").value || "github-pendiente";
+        const currentDate = new Date().toLocaleDateString("es-CR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        });
+
+        let feedback = "";
+        if (score >= 90) {
+          feedback = "Excelente dominio inicial de módulos, funciones reutilizables e importación con alias.";
+        } else if (score >= 70) {
+          feedback = "Buen avance. Revise los criterios pendientes para fortalecer la organización del código.";
+        } else {
+          feedback = "Necesita reforzar imports, funciones, módulo propio y ejecución del programa principal.";
+        }
+
+        lastGradeReport = {
+          labId: "lab-01",
+          labTitle: "Laboratorio 1: Módulos en Python",
+          studentName,
+          githubUser,
+          date: currentDate,
+          score,
+          gradeText,
+          feedback,
+          details: details.map(row => ({
+            status: row[0],
+            points: row[1],
+            message: row[2]
+          }))
+        };
+
+        let html = `
+          <h3>Resultado del laboratorio</h3>
+          <div class="score-big">${score}/100</div>
+          <p>
+            <strong>Estado:</strong> ${gradeText}<br>
+            <strong>Estudiante:</strong> ${studentName}<br>
+            <strong>GitHub:</strong> ${githubUser}<br>
+            <strong>Fecha:</strong> ${currentDate}
+          </p>
+          <ul>
+        `;
+
+        for (const row of details) {
+          const status = row[0] === "OK" ? "pass" : "fail";
+          html += `<li><span class="${status}">${row[0]}</span> (${row[1]} pts): ${row[2]}</li>`;
+        }
+
+        html += "</ul>";
+
+        if (score >= 90) {
+          html += `<p class="pass"><strong>Retroalimentación:</strong> ${feedback}</p>`;
+        } else if (score >= 70) {
+          html += `<p class="warn"><strong>Retroalimentación:</strong> ${feedback}</p>`;
+        } else {
+          html += `<p class="fail"><strong>Retroalimentación:</strong> ${feedback}</p>`;
+        }
+
+        html += `<p class="small">Puede descargar esta nota usando el botón <strong>Descargar PDF de nota</strong>.</p>`;
+
+        gradeDiv.innerHTML = html;
+        await runProgram();
+      } catch (err) {
+        gradeDiv.innerHTML = `<p class="fail">Error al evaluar: ${err}</p>`;
+        output.textContent = "Error al evaluar: " + err;
+      }
+    }
+
+    async function downloadGradePDF() {
+      hideLabAlert();
+
+      const pdfButton = document.getElementById("pdfButton");
+      const originalText = pdfButton ? pdfButton.textContent : "";
+
+      try {
+        if (pdfButton) {
+          pdfButton.disabled = true;
+          pdfButton.textContent = "Preparando PDF...";
+        }
+
+        if (!lastGradeReport) {
+          showLabAlert("Primero se generará la nota automática para poder crear el PDF.", "info");
+          await gradeProgram();
+        }
+
+        if (!lastGradeReport) {
+          showLabAlert("No fue posible generar la nota. Revise el código y vuelva a intentarlo.", "error");
+          return;
+        }
+
+        if (!isJsPDFReady()) {
+          showLabAlert(
+            "No se pudo cargar la librería para PDF. Verifique su conexión a internet y recargue el laboratorio.",
+            "error"
+          );
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "letter"
+        });
+
+        const report = lastGradeReport;
+        const safeName = report.studentName
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "estudiante";
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 16;
+        const contentWidth = pageWidth - margin * 2;
+
+        function addPageIfNeeded(extraHeight = 12) {
+          if (y + extraHeight > pageHeight - 18) {
+            doc.addPage();
+            y = 18;
+          }
+        }
+
+        function writeWrapped(text, x, yStart, width, lineHeight = 5.6) {
+          const lines = doc.splitTextToSize(String(text), width);
+          doc.text(lines, x, yStart);
+          return yStart + lines.length * lineHeight;
+        }
+
+        let y = 18;
+
+        // Header background
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, pageWidth, 38, "F");
+
+        doc.setTextColor(248, 250, 252);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("Reporte de Nota - Laboratorio 1", margin, 18);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10.5);
+        doc.text("Fundamentos de Python 2 | Módulo 1: Módulos en Python", margin, 27);
+
+        y = 50;
+
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text("Datos del estudiante", margin, y);
+
+        y += 8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.text(`Nombre: ${report.studentName}`, margin, y);
+        y += 7;
+        doc.text(`Fecha: ${report.date}`, margin, y);
+
+        y += 13;
+
+        // Score card
+        doc.setFillColor(224, 242, 254);
+        doc.setDrawColor(56, 189, 248);
+        doc.roundedRect(margin, y, contentWidth, 24, 3, 3, "FD");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(2, 6, 23);
+        doc.text(`Nota final: ${report.score}/100`, margin + 6, y + 10);
+
+        doc.setFontSize(12);
+        doc.text(`Estado: ${report.gradeText}`, margin + 6, y + 18);
+
+        y += 36;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.setTextColor(15, 23, 42);
+        doc.text("Detalle de evaluación", margin, y);
+
+        y += 8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+
+        report.details.forEach((item, index) => {
+          addPageIfNeeded(16);
+
+          const statusText = item.status === "OK" ? "Cumplido" : "Pendiente";
+          const line = `${index + 1}. ${statusText} (${item.points} pts): ${item.message}`;
+          const lines = doc.splitTextToSize(line, contentWidth);
+
+          if (item.status === "OK") {
+            doc.setTextColor(22, 101, 52);
+          } else {
+            doc.setTextColor(153, 27, 27);
+          }
+
+          doc.text(lines, margin, y);
+          y += lines.length * 5.3 + 2;
+        });
+
+        y += 6;
+        addPageIfNeeded(28);
+
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text("Retroalimentación", margin, y);
+
+        y += 8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10.5);
+        doc.setTextColor(51, 65, 85);
+        y = writeWrapped(report.feedback, margin, y, contentWidth, 5.8);
+
+        y += 10;
+        addPageIfNeeded(16);
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Documento generado automáticamente desde el laboratorio HTML.", margin, y);
+
+        doc.save(`nota_laboratorio_1_${safeName}.pdf`);
+        showLabAlert("PDF generado correctamente. Revise la carpeta de descargas de su navegador.", "success");
+      } catch (error) {
+        console.error(error);
+        showLabAlert("Ocurrió un error al generar el PDF: " + error.message, "error");
+      } finally {
+        if (pdfButton) {
+          pdfButton.disabled = false;
+          pdfButton.textContent = originalText || "Descargar PDF de nota";
+        }
+      }
+    }
+async function downloadSubmissionJSON() {
+  hideLabAlert();
+
+  if (!lastGradeReport) {
+    showLabAlert("Primero se generará la nota automática para crear el JSON de entrega.", "info");
+    await gradeProgram();
+  }
+
+  if (!lastGradeReport) {
+    showLabAlert("No fue posible generar el JSON. Revise el código y vuelva a intentarlo.", "error");
+    return;
+  }
+
+  const safeGithubUser = lastGradeReport.githubUser
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "github-pendiente";
+
+  const payload = {
+    labId: lastGradeReport.labId,
+    labTitle: lastGradeReport.labTitle,
+    studentName: lastGradeReport.studentName,
+    githubUser: lastGradeReport.githubUser,
+    score: lastGradeReport.score,
+    status: lastGradeReport.gradeText,
+    date: lastGradeReport.date,
+    feedback: lastGradeReport.feedback,
+    details: lastGradeReport.details
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lab-01-${safeGithubUser}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  showLabAlert("JSON de entrega generado correctamente.", "success");
+}
+    function loadExample() {
+      document.getElementById("moduleCode").value = `# mi_modulo.py
+# Laboratorio 1 - Módulos en Python
+
+import math
+import random
+from datetime import datetime
+
+
+def calcular_area_circulo(radio):
+    """
+    Retorna el área de un círculo.
+    Fórmula: pi * radio ** 2
+    """
+    return math.pi * radio ** 2
+
+
+def generar_codigo_estudiante(nombre):
+    """
+    Retorna un código con las iniciales del estudiante y un número aleatorio.
+    Ejemplo: Ana Mora -> AM-4821
+    """
+    partes = nombre.split()
+    iniciales = "".join(parte[0].upper() for parte in partes if parte)
+    numero = random.randint(1000, 9999)
+    return f"{iniciales}-{numero}"
+
+
+def obtener_fecha_actual():
+    """
+    Retorna la fecha actual en formato YYYY-MM-DD.
+    """
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def resumen_estudiante(nombre, radio):
+    """
+    Retorna un diccionario con:
+    - nombre
+    - codigo
+    - fecha
+    - area
+    """
+    return {
+        "nombre": nombre,
+        "codigo": generar_codigo_estudiante(nombre),
+        "fecha": obtener_fecha_actual(),
+        "area": round(calcular_area_circulo(radio), 2)
+    }
+`;
+
+      document.getElementById("mainCode").value = `# main.py
+# Importamos nuestro módulo propio usando alias.
+
+import mi_modulo as mod
+
+nombre = "Estudiante Python"
+radio = 5
+
+resultado = mod.resumen_estudiante(nombre, radio)
+
+print("Resumen generado:")
+print(resultado)
+`;
+
+      lastGradeReport = null;
+      hideLabAlert();
+      document.getElementById("grade").innerHTML = 'Presione <strong>Generar nota automática</strong> para evaluar el laboratorio.';
+      document.getElementById("output").textContent = "";
+    }
+
+    function resetCode() {
+      const confirmReset = confirm("¿Desea reiniciar el laboratorio? Se perderá el código escrito.");
+      if (confirmReset) {
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>

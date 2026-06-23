@@ -1,0 +1,39 @@
+name: Validate Submissions
+
+on:
+  pull_request:
+    paths:
+      - "submissions/**/*.json"
+      - "scripts/build-grades.js"
+      - "data/students.json"
+      - "data/labs.json"
+  push:
+    branches:
+      - main
+    paths:
+      - "submissions/**/*.json"
+      - "scripts/build-grades.js"
+      - "data/students.json"
+      - "data/labs.json"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate submissions and build grades
+        run: node scripts/build-grades.js
+
+      - name: Show generated grades
+        run: cat data/grades.json

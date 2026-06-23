@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Notas - Python 2</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Dashboard del profesor</p>
+      <h1>Notas de laboratorios</h1>
+      <p>
+        Visualización de participantes, usuarios de GitHub y notas registradas.
+      </p>
+      <div class="actions-row">
+        <a class="button" href="index.html">Volver al inicio</a>
+      </div>
+    </header>
+
+    <section class="glass">
+      <h2>Resumen</h2>
+      <div id="summary" class="summary-grid"></div>
+    </section>
+
+    <section class="glass">
+      <h2>Detalle por estudiante</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Estudiante</th>
+              <th>GitHub</th>
+              <th>Lab 1</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="gradesTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/dashboard.js"></script>
+</body>
+</html>
